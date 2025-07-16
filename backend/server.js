@@ -7,6 +7,10 @@ const dotenv = require("dotenv")
 const authRoutes = require("./routes/auth")
 const movieRoutes = require("./routes/movies")
 const userRoutes = require("./routes/users")
+const aiRoutes = require("./routes/ai")
+const streamingRoutes = require("./routes/streaming")
+const socialRoutes = require("./routes/social")
+const analyticsRoutes = require("./routes/analytics")
 
 dotenv.config()
 
@@ -30,12 +34,26 @@ mongoose
 app.use("/api/auth", authRoutes)
 app.use("/api/movies", movieRoutes)
 app.use("/api/users", userRoutes)
+app.use("/api/ai", aiRoutes)
+app.use("/api/streaming", streamingRoutes)
+app.use("/api/social", socialRoutes)
+app.use("/api/analytics", analyticsRoutes)
 
 // Health check route
 app.get("/api/health", (req, res) => {
-  res.json({ message: "Movie App API is running!" })
+  res.json({
+    message: "Enhanced Movie App API is running!",
+    features: [
+      "AI-powered recommendations",
+      "Smart search",
+      "Streaming availability",
+      "Social features",
+      "Analytics dashboard",
+      "Voice search support",
+    ],
+  })
 })
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+  console.log(`Enhanced Movie App Server running on port ${PORT}`)
 })
