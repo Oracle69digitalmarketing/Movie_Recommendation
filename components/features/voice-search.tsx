@@ -1,15 +1,17 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Mic, MicOff, Volume2 } from "lucide-react"
 
 interface VoiceSearchProps {
-  onSearch: (query: string) => void
+  onResult: (transcript: string) => void
+  onError?: (error: string) => void
 }
 
-export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
+export default function VoiceSearch({ onResult, onError }: VoiceSearchProps) {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState("")
   const [isSupported, setIsSupported] = useState(false)
@@ -19,101 +21,130 @@ export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
     // Check if speech recognition is supported
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
-    setIsSupported(!!SpeechRecognition)
-  }, [])
+    if (SpeechRecognition) {
+      setIsSupported(true)
+      recognitionRef.current = new SpeechRecognition()
 
-  const startListening = () => {
-    if (!isSupported) {
-      alert("Speech recognition not supported in this browser")
-      return
-    }
+      const recognition = recognitionRef.current
+      recognition.continuous = false
+      recognition.interimResults = true
+      recognition.lang = "en-US"
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      recognition.onstart = () => {
+        setIsListening(true)
+      }
 
-    const recognition = new SpeechRecognition()
+      recognition.onresult = (event: any) => {
+        let finalTranscript = ""
+        let interimTranscript = ""
 
-    recognition.continuous = false
-    recognition.interimResults = true
-    recognition.lang = "en-US"
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript
+          } else {
+            interimTranscript += transcript
+          }
+        }
 
-    recognition.onstart = () => {
-      setIsListening(true)
-    }
+        setTranscript(finalTranscript || interimTranscript)
 
-    recognition.onresult = (event: any) => {
-      const current = event.resultIndex
-      const transcript = event.results[current][0].transcript
-      setTranscript(transcript)
+        if (finalTranscript) {
+          onResult(finalTranscript)
+        }
+      }
 
-      if (event.results[current].isFinal) {
-        onSearch(transcript)
-        setTranscript("")
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error)
+        setIsListening(false)
+        if (onError) {
+          onError(`Speech recognition error: ${event.error}`)
+        }
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
       }
     }
 
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error)
-      setIsListening(false)
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
     }
+  }, [onResult, onError])
 
-    recognition.onend = () => {
-      setIsListening(false)
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) {
+      setTranscript("")
+      recognitionRef.current.start()
     }
-
-    recognitionRef.current = recognition
-    recognition.start()
   }
 
   const stopListening = () => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && isListening) {
       recognitionRef.current.stop()
     }
-    setIsListening(false)
   }
 
   if (!isSupported) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-sm text-muted-foreground text-center">
-            Voice search is not supported in this browser. Please try Chrome, Safari, or Edge.
-          </p>
+      <Card className="w-full">
+        <CardContent className="flex items-center justify-center p-6">
+          <div className="text-center space-y-2">
+            <Volume2 className="h-8 w-8 mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Voice search is not supported in your browser</p>
+            <Badge variant="outline">Try Chrome, Safari, or Edge</Badge>
+          </div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <div className="space-y-2">
-      <Button
-        variant={isListening ? "destructive" : "outline"}
-        onClick={isListening ? stopListening : startListening}
-        className="w-full"
-      >
-        {isListening ? (
-          <>
-            <MicOff className="w-4 h-4 mr-2" />
-            Stop Listening
-          </>
-        ) : (
-          <>
-            <Mic className="w-4 h-4 mr-2" />
-            Voice Search
-          </>
-        )}
-      </Button>
+    <Card className="w-full">
+      <CardContent className="p-6">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant={isListening ? "destructive" : "default"}
+              size="lg"
+              onClick={isListening ? stopListening : startListening}
+              className="rounded-full w-16 h-16"
+            >
+              {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+            </Button>
+          </div>
 
-      {isListening && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Volume2 className="w-4 h-4 text-red-500 animate-pulse" />
-              <span className="text-sm font-medium">Listening...</span>
+          <div className="text-center space-y-2">
+            {isListening ? (
+              <>
+                <Badge variant="secondary" className="animate-pulse">
+                  Listening...
+                </Badge>
+                <p className="text-sm text-muted-foreground">Speak now to search for movies</p>
+              </>
+            ) : (
+              <>
+                <Badge variant="outline">Ready</Badge>
+                <p className="text-sm text-muted-foreground">Click the microphone to start voice search</p>
+              </>
+            )}
+          </div>
+
+          {transcript && (
+            <div className="w-full p-3 bg-muted rounded-lg">
+              <p className="text-sm">
+                <span className="font-medium">You said:</span> "{transcript}"
+              </p>
             </div>
-            {transcript && <p className="text-sm text-muted-foreground">"{transcript}"</p>}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          )}
+
+          <div className="text-xs text-muted-foreground text-center max-w-sm">
+            Try saying: "Show me action movies from 2020" or "Find comedies with high ratings"
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

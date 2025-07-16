@@ -4,159 +4,257 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, Plus, Star, Eye } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { Heart, Plus, Star, Calendar, Clock, Eye, EyeOff, Share2, Info } from "lucide-react"
 
 interface Movie {
   id: number
   title: string
-  poster_path?: string
-  release_date?: string
-  vote_average?: number
-  overview?: string
+  poster_path: string
+  overview: string
+  vote_average: number
+  release_date: string
   genre_ids?: number[]
+  genres?: string[]
+  runtime?: number
+  adult?: boolean
 }
 
 interface MovieCardProps {
   movie: Movie
+  onAddToFavorites?: (movieId: number) => void
+  onAddToWatchlist?: (movieId: number) => void
+  onMarkAsWatched?: (movieId: number) => void
+  onRate?: (movieId: number, rating: number) => void
+  onShare?: (movieId: number) => void
+  onViewDetails?: (movieId: number) => void
+  isFavorite?: boolean
+  isInWatchlist?: boolean
+  isWatched?: boolean
+  userRating?: number
 }
 
-export default function MovieCard({ movie }: MovieCardProps) {
-  const { user } = useAuth()
-  const [isFavorite, setIsFavorite] = useState(false)
-  const [isInWatchlist, setIsInWatchlist] = useState(false)
-  const [isWatched, setIsWatched] = useState(false)
+export default function MovieCard({
+  movie,
+  onAddToFavorites,
+  onAddToWatchlist,
+  onMarkAsWatched,
+  onRate,
+  onShare,
+  onViewDetails,
+  isFavorite = false,
+  isInWatchlist = false,
+  isWatched = false,
+  userRating,
+}: MovieCardProps) {
+  const [showRating, setShowRating] = useState(false)
+  const [hoveredRating, setHoveredRating] = useState(0)
 
-  const handleFavoriteToggle = async () => {
-    if (!user) return
-
-    try {
-      const response = await fetch(`/api/users/${user.id}/favorites`, {
-        method: isFavorite ? "DELETE" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ movieId: movie.id }),
-      })
-
-      if (response.ok) {
-        setIsFavorite(!isFavorite)
-      }
-    } catch (error) {
-      console.error("Error toggling favorite:", error)
+  const handleFavoriteClick = () => {
+    if (onAddToFavorites) {
+      onAddToFavorites(movie.id)
     }
   }
 
-  const handleWatchlistToggle = async () => {
-    if (!user) return
-
-    try {
-      const response = await fetch(`/api/users/${user.id}/watchlist`, {
-        method: isInWatchlist ? "DELETE" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ movieId: movie.id }),
-      })
-
-      if (response.ok) {
-        setIsInWatchlist(!isInWatchlist)
-      }
-    } catch (error) {
-      console.error("Error toggling watchlist:", error)
+  const handleWatchlistClick = () => {
+    if (onAddToWatchlist) {
+      onAddToWatchlist(movie.id)
     }
   }
 
-  const handleWatchedToggle = async () => {
-    if (!user) return
-
-    try {
-      const response = await fetch(`/api/users/${user.id}/watched`, {
-        method: isWatched ? "DELETE" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ movieId: movie.id }),
-      })
-
-      if (response.ok) {
-        setIsWatched(!isWatched)
-      }
-    } catch (error) {
-      console.error("Error toggling watched:", error)
+  const handleWatchedClick = () => {
+    if (onMarkAsWatched) {
+      onMarkAsWatched(movie.id)
     }
   }
 
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-    : "/placeholder.svg?height=750&width=500"
+  const handleRatingClick = (rating: number) => {
+    if (onRate) {
+      onRate(movie.id, rating)
+      setShowRating(false)
+    }
+  }
 
-  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A"
-  const rating = movie.vote_average ? (movie.vote_average / 2).toFixed(1) : "N/A"
+  const handleShareClick = () => {
+    if (onShare) {
+      onShare(movie.id)
+    }
+  }
+
+  const handleDetailsClick = () => {
+    if (onViewDetails) {
+      onViewDetails(movie.id)
+    }
+  }
+
+  const formatReleaseDate = (dateString: string) => {
+    return new Date(dateString).getFullYear()
+  }
+
+  const getRatingColor = (rating: number) => {
+    if (rating >= 8) return "text-green-500"
+    if (rating >= 6) return "text-yellow-500"
+    return "text-red-500"
+  }
 
   return (
-    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-105">
-      <div className="relative aspect-[2/3] overflow-hidden">
+    <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-105">
+      <div className="relative">
         <img
-          src={posterUrl || "/placeholder.svg"}
+          src={movie.poster_path || "/placeholder.svg?height=400&width=300"}
           alt={movie.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className="w-full h-64 sm:h-80 object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement
+            target.src = "/placeholder.svg?height=400&width=300"
+          }}
         />
 
-        {/* Overlay with actions */}
+        {/* Overlay with actions - appears on hover */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <div className="flex gap-2">
-            {user && (
-              <>
-                <Button
-                  size="sm"
-                  variant={isFavorite ? "default" : "secondary"}
-                  onClick={handleFavoriteToggle}
-                  className="h-8 w-8 p-0"
-                >
-                  <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
-                </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleFavoriteClick}
+              className={isFavorite ? "text-red-500" : ""}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+            </Button>
 
-                <Button
-                  size="sm"
-                  variant={isInWatchlist ? "default" : "secondary"}
-                  onClick={handleWatchlistToggle}
-                  className="h-8 w-8 p-0"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleWatchlistClick}
+              className={isInWatchlist ? "text-blue-500" : ""}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
 
-                <Button
-                  size="sm"
-                  variant={isWatched ? "default" : "secondary"}
-                  onClick={handleWatchedToggle}
-                  className="h-8 w-8 p-0"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </>
-            )}
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleWatchedClick}
+              className={isWatched ? "text-green-500" : ""}
+            >
+              {isWatched ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
+
+            <Button size="sm" variant="secondary" onClick={() => setShowRating(!showRating)}>
+              <Star className={`h-4 w-4 ${userRating ? "fill-current text-yellow-500" : ""}`} />
+            </Button>
           </div>
         </div>
 
-        {/* Rating badge */}
-        {movie.vote_average && movie.vote_average > 0 && (
-          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black">
-            <Star className="w-3 h-3 mr-1 fill-current" />
-            {rating}
-          </Badge>
+        {/* Rating overlay */}
+        {showRating && (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <Button
+                  key={rating}
+                  size="sm"
+                  variant="ghost"
+                  className="p-1"
+                  onMouseEnter={() => setHoveredRating(rating)}
+                  onMouseLeave={() => setHoveredRating(0)}
+                  onClick={() => handleRatingClick(rating)}
+                >
+                  <Star
+                    className={`h-6 w-6 ${
+                      rating <= (hoveredRating || userRating || 0) ? "fill-current text-yellow-500" : "text-gray-400"
+                    }`}
+                  />
+                </Button>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* Top badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {movie.adult && (
+            <Badge variant="destructive" className="text-xs">
+              18+
+            </Badge>
+          )}
+          {isWatched && (
+            <Badge variant="secondary" className="text-xs">
+              Watched
+            </Badge>
+          )}
+        </div>
+
+        {/* Rating badge */}
+        <div className="absolute top-2 right-2">
+          <Badge variant="secondary" className={`text-xs ${getRatingColor(movie.vote_average)}`}>
+            <Star className="h-3 w-3 mr-1 fill-current" />
+            {movie.vote_average.toFixed(1)}
+          </Badge>
+        </div>
       </div>
 
       <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-1 line-clamp-2 min-h-[2.5rem]">{movie.title}</h3>
+        <div className="space-y-2">
+          <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem]">{movie.title}</h3>
 
-        <p className="text-xs text-muted-foreground mb-2">{releaseYear}</p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>{formatReleaseDate(movie.release_date)}</span>
 
-        {movie.overview && <p className="text-xs text-muted-foreground line-clamp-3">{movie.overview}</p>}
+            {movie.runtime && (
+              <>
+                <span>•</span>
+                <Clock className="h-3 w-3" />
+                <span>{movie.runtime}min</span>
+              </>
+            )}
+          </div>
+
+          {/* Genres */}
+          {movie.genres && movie.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {movie.genres.slice(0, 2).map((genre) => (
+                <Badge key={genre} variant="outline" className="text-xs">
+                  {genre}
+                </Badge>
+              ))}
+              {movie.genres.length > 2 && (
+                <Badge variant="outline" className="text-xs">
+                  +{movie.genres.length - 2}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* User rating */}
+          {userRating && (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">Your rating:</span>
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`h-3 w-3 ${star <= userRating ? "fill-current text-yellow-500" : "text-gray-300"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground line-clamp-3">{movie.overview}</p>
+
+          {/* Action buttons */}
+          <div className="flex gap-1 pt-2">
+            <Button size="sm" variant="outline" onClick={handleDetailsClick} className="flex-1 text-xs bg-transparent">
+              <Info className="h-3 w-3 mr-1" />
+              Details
+            </Button>
+
+            <Button size="sm" variant="outline" onClick={handleShareClick}>
+              <Share2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

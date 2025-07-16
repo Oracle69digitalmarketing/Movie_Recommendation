@@ -1,60 +1,48 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, X, Filter } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Search, Filter, X, Sparkles } from "lucide-react"
 
 interface SearchFilters {
-  keywords: string
-  genre: string
-  year: number[]
-  rating: number[]
-  runtime: number[]
-  language: string
+  query: string
+  genres: string[]
+  yearRange: [number, number]
+  ratingRange: [number, number]
+  runtimeRange: [number, number]
   sortBy: string
-}
-
-interface SmartSearchProps {
-  onSearch: (filters: SearchFilters) => void
+  includeAdult: boolean
+  language: string
 }
 
 const genres = [
-  { value: "28", label: "Action" },
-  { value: "12", label: "Adventure" },
-  { value: "16", label: "Animation" },
-  { value: "35", label: "Comedy" },
-  { value: "80", label: "Crime" },
-  { value: "99", label: "Documentary" },
-  { value: "18", label: "Drama" },
-  { value: "10751", label: "Family" },
-  { value: "14", label: "Fantasy" },
-  { value: "36", label: "History" },
-  { value: "27", label: "Horror" },
-  { value: "10402", label: "Music" },
-  { value: "9648", label: "Mystery" },
-  { value: "10749", label: "Romance" },
-  { value: "878", label: "Science Fiction" },
-  { value: "10770", label: "TV Movie" },
-  { value: "53", label: "Thriller" },
-  { value: "10752", label: "War" },
-  { value: "37", label: "Western" },
-]
-
-const languages = [
-  { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "it", label: "Italian" },
-  { value: "ja", label: "Japanese" },
-  { value: "ko", label: "Korean" },
-  { value: "zh", label: "Chinese" },
+  "Action",
+  "Adventure",
+  "Animation",
+  "Comedy",
+  "Crime",
+  "Documentary",
+  "Drama",
+  "Family",
+  "Fantasy",
+  "History",
+  "Horror",
+  "Music",
+  "Mystery",
+  "Romance",
+  "Science Fiction",
+  "TV Movie",
+  "Thriller",
+  "War",
+  "Western",
 ]
 
 const sortOptions = [
@@ -66,229 +54,276 @@ const sortOptions = [
   { value: "title.desc", label: "Z-A" },
 ]
 
-export default function SmartSearch({ onSearch }: SmartSearchProps) {
+const languages = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Spanish" },
+  { value: "fr", label: "French" },
+  { value: "de", label: "German" },
+  { value: "it", label: "Italian" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+]
+
+interface SmartSearchProps {
+  onSearch: (filters: SearchFilters) => void
+  onAISearch?: (query: string) => void
+}
+
+export default function SmartSearch({ onSearch, onAISearch }: SmartSearchProps) {
   const [filters, setFilters] = useState<SearchFilters>({
-    keywords: "",
-    genre: "",
-    year: [1990, 2024],
-    rating: [0, 10],
-    runtime: [60, 180],
-    language: "",
+    query: "",
+    genres: [],
+    yearRange: [1990, 2024],
+    ratingRange: [0, 10],
+    runtimeRange: [60, 180],
     sortBy: "popularity.desc",
+    includeAdult: false,
+    language: "en",
   })
 
-  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [aiQuery, setAiQuery] = useState("")
+
+  const handleGenreToggle = (genre: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      genres: prev.genres.includes(genre) ? prev.genres.filter((g) => g !== genre) : [...prev.genres, genre],
+    }))
+  }
 
   const handleSearch = () => {
     onSearch(filters)
-    updateActiveFilters()
   }
 
-  const updateActiveFilters = () => {
-    const active: string[] = []
-
-    if (filters.keywords) active.push(`Keywords: ${filters.keywords}`)
-    if (filters.genre) {
-      const genreLabel = genres.find((g) => g.value === filters.genre)?.label
-      if (genreLabel) active.push(`Genre: ${genreLabel}`)
+  const handleAISearch = () => {
+    if (onAISearch && aiQuery.trim()) {
+      onAISearch(aiQuery)
     }
-    if (filters.year[0] !== 1990 || filters.year[1] !== 2024) {
-      active.push(`Year: ${filters.year[0]}-${filters.year[1]}`)
-    }
-    if (filters.rating[0] !== 0 || filters.rating[1] !== 10) {
-      active.push(`Rating: ${filters.rating[0]}-${filters.rating[1]}`)
-    }
-    if (filters.runtime[0] !== 60 || filters.runtime[1] !== 180) {
-      active.push(`Runtime: ${filters.runtime[0]}-${filters.runtime[1]} min`)
-    }
-    if (filters.language) {
-      const langLabel = languages.find((l) => l.value === filters.language)?.label
-      if (langLabel) active.push(`Language: ${langLabel}`)
-    }
-
-    setActiveFilters(active)
   }
 
-  const clearFilter = (filterText: string) => {
-    if (filterText.startsWith("Keywords:")) {
-      setFilters((prev) => ({ ...prev, keywords: "" }))
-    } else if (filterText.startsWith("Genre:")) {
-      setFilters((prev) => ({ ...prev, genre: "" }))
-    } else if (filterText.startsWith("Year:")) {
-      setFilters((prev) => ({ ...prev, year: [1990, 2024] }))
-    } else if (filterText.startsWith("Rating:")) {
-      setFilters((prev) => ({ ...prev, rating: [0, 10] }))
-    } else if (filterText.startsWith("Runtime:")) {
-      setFilters((prev) => ({ ...prev, runtime: [60, 180] }))
-    } else if (filterText.startsWith("Language:")) {
-      setFilters((prev) => ({ ...prev, language: "" }))
-    }
-
-    setTimeout(updateActiveFilters, 0)
-  }
-
-  const clearAllFilters = () => {
+  const clearFilters = () => {
     setFilters({
-      keywords: "",
-      genre: "",
-      year: [1990, 2024],
-      rating: [0, 10],
-      runtime: [60, 180],
-      language: "",
+      query: "",
+      genres: [],
+      yearRange: [1990, 2024],
+      ratingRange: [0, 10],
+      runtimeRange: [60, 180],
       sortBy: "popularity.desc",
+      includeAdult: false,
+      language: "en",
     })
-    setActiveFilters([])
   }
+
+  const activeFiltersCount =
+    (filters.query ? 1 : 0) +
+    filters.genres.length +
+    (filters.yearRange[0] !== 1990 || filters.yearRange[1] !== 2024 ? 1 : 0) +
+    (filters.ratingRange[0] !== 0 || filters.ratingRange[1] !== 10 ? 1 : 0) +
+    (filters.runtimeRange[0] !== 60 || filters.runtimeRange[1] !== 180 ? 1 : 0) +
+    (filters.sortBy !== "popularity.desc" ? 1 : 0) +
+    (filters.includeAdult ? 1 : 0) +
+    (filters.language !== "en" ? 1 : 0)
 
   return (
     <div className="space-y-6">
-      {/* Search Input */}
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Input
-            placeholder="Search for movies, actors, directors..."
-            value={filters.keywords}
-            onChange={(e) => setFilters((prev) => ({ ...prev, keywords: e.target.value }))}
-            className="w-full"
-          />
-        </div>
-        <Button onClick={handleSearch} className="px-6">
-          <Search className="w-4 h-4 mr-2" />
-          Search
-        </Button>
-      </div>
-
-      {/* Active Filters */}
-      {activeFilters.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm font-medium">Active filters:</span>
-          {activeFilters.map((filter, index) => (
-            <Badge key={index} variant="secondary" className="cursor-pointer">
-              {filter}
-              <X className="w-3 h-3 ml-1" onClick={() => clearFilter(filter)} />
-            </Badge>
-          ))}
-          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-            Clear all
-          </Button>
-        </div>
-      )}
-
-      {/* Advanced Filters */}
+      {/* AI-Powered Search */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Advanced Filters
+            <Sparkles className="h-5 w-5" />
+            AI-Powered Search
           </CardTitle>
+          <CardDescription>Describe what you're looking for in natural language</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g., 'Show me recent sci-fi movies with good ratings' or 'Find comedies from the 90s'"
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleAISearch()}
+            />
+            <Button onClick={handleAISearch} disabled={!aiQuery.trim()}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Search
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Traditional Search */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Advanced Search
+              </CardTitle>
+              <CardDescription>Use detailed filters to find exactly what you want</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary">
+                  {activeFiltersCount} filter{activeFiltersCount !== 1 ? "s" : ""} active
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)}>
+                <Filter className="h-4 w-4 mr-2" />
+                {showAdvanced ? "Hide" : "Show"} Filters
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Genre */}
-            <div className="space-y-2">
-              <Label>Genre</Label>
-              <Select
-                value={filters.genre}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, genre: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select genre" />
-                </SelectTrigger>
-                <SelectContent>
+          {/* Basic Search */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Search movies by title, actor, director..."
+              value={filters.query}
+              onChange={(e) => setFilters((prev) => ({ ...prev, query: e.target.value }))}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <Button onClick={handleSearch}>
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
+          </div>
+
+          {/* Advanced Filters */}
+          {showAdvanced && (
+            <div className="space-y-6 pt-4 border-t">
+              {/* Genres */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Genres</Label>
+                <div className="flex flex-wrap gap-2">
                   {genres.map((genre) => (
-                    <SelectItem key={genre.value} value={genre.value}>
-                      {genre.label}
-                    </SelectItem>
+                    <Badge
+                      key={genre}
+                      variant={filters.genres.includes(genre) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => handleGenreToggle(genre)}
+                    >
+                      {genre}
+                      {filters.genres.includes(genre) && <X className="h-3 w-3 ml-1" />}
+                    </Badge>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+
+              {/* Year Range */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  Release Year: {filters.yearRange[0]} - {filters.yearRange[1]}
+                </Label>
+                <Slider
+                  value={filters.yearRange}
+                  onValueChange={(value) => setFilters((prev) => ({ ...prev, yearRange: value as [number, number] }))}
+                  min={1900}
+                  max={2024}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Rating Range */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  Rating: {filters.ratingRange[0]} - {filters.ratingRange[1]}
+                </Label>
+                <Slider
+                  value={filters.ratingRange}
+                  onValueChange={(value) => setFilters((prev) => ({ ...prev, ratingRange: value as [number, number] }))}
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Runtime Range */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  Runtime: {filters.runtimeRange[0]} - {filters.runtimeRange[1]} minutes
+                </Label>
+                <Slider
+                  value={filters.runtimeRange}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, runtimeRange: value as [number, number] }))
+                  }
+                  min={30}
+                  max={300}
+                  step={5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Sort and Language */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Sort By</Label>
+                  <Select
+                    value={filters.sortBy}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Language</Label>
+                  <Select
+                    value={filters.language}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languages.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Include Adult Content */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="includeAdult"
+                  checked={filters.includeAdult}
+                  onCheckedChange={(checked) => setFilters((prev) => ({ ...prev, includeAdult: checked as boolean }))}
+                />
+                <Label htmlFor="includeAdult" className="text-sm">
+                  Include adult content
+                </Label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleSearch} className="flex-1">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear All
+                </Button>
+              </div>
             </div>
-
-            {/* Language */}
-            <div className="space-y-2">
-              <Label>Language</Label>
-              <Select
-                value={filters.language}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, language: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Year Range */}
-          <div className="space-y-2">
-            <Label>
-              Release Year: {filters.year[0]} - {filters.year[1]}
-            </Label>
-            <Slider
-              value={filters.year}
-              onValueChange={(value) => setFilters((prev) => ({ ...prev, year: value }))}
-              min={1900}
-              max={2024}
-              step={1}
-              className="w-full"
-            />
-          </div>
-
-          {/* Rating Range */}
-          <div className="space-y-2">
-            <Label>
-              Rating: {filters.rating[0]} - {filters.rating[1]}
-            </Label>
-            <Slider
-              value={filters.rating}
-              onValueChange={(value) => setFilters((prev) => ({ ...prev, rating: value }))}
-              min={0}
-              max={10}
-              step={0.1}
-              className="w-full"
-            />
-          </div>
-
-          {/* Runtime Range */}
-          <div className="space-y-2">
-            <Label>
-              Runtime: {filters.runtime[0]} - {filters.runtime[1]} minutes
-            </Label>
-            <Slider
-              value={filters.runtime}
-              onValueChange={(value) => setFilters((prev) => ({ ...prev, runtime: value }))}
-              min={30}
-              max={300}
-              step={5}
-              className="w-full"
-            />
-          </div>
-
-          {/* Sort By */}
-          <div className="space-y-2">
-            <Label>Sort By</Label>
-            <Select
-              value={filters.sortBy}
-              onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -6,6 +6,12 @@ interface User {
   id: string
   username: string
   email: string
+  avatar?: string
+  preferences?: {
+    favoriteGenres: string[]
+    language: string
+    region: string
+  }
 }
 
 interface AuthContextType {
@@ -14,6 +20,7 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<boolean>
   logout: () => void
   loading: boolean
+  updateUser: (userData: Partial<User>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -36,94 +43,112 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Check for existing token on mount
-    const token = localStorage.getItem("token")
-    if (token) {
-      // Verify token and get user info
-      verifyToken(token)
-    } else {
-      setLoading(false)
+    const checkAuth = () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+        if (token) {
+          // Mock user data for now - replace with actual API call
+          setUser({
+            id: "1",
+            username: "demo_user",
+            email: "demo@example.com",
+            preferences: {
+              favoriteGenres: ["Action", "Sci-Fi"],
+              language: "en",
+              region: "US",
+            },
+          })
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    checkAuth()
   }, [])
 
-  const verifyToken = async (token: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch("/api/auth/verify", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      setLoading(true)
+      // Mock login - replace with actual API call
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData.user)
-      } else {
-        localStorage.removeItem("token")
+      const mockUser: User = {
+        id: "1",
+        username: email.split("@")[0],
+        email,
+        preferences: {
+          favoriteGenres: ["Action", "Drama"],
+          language: "en",
+          region: "US",
+        },
       }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", "mock-jwt-token")
+      }
+      setUser(mockUser)
+      return true
     } catch (error) {
-      console.error("Token verification failed:", error)
-      localStorage.removeItem("token")
+      console.error("Login failed:", error)
+      return false
     } finally {
       setLoading(false)
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem("token", data.token)
-        setUser(data.user)
-        return true
-      }
-      return false
-    } catch (error) {
-      console.error("Login failed:", error)
-      return false
-    }
-  }
-
   const register = async (username: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, email, password }),
-      })
+      setLoading(true)
+      // Mock registration - replace with actual API call
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem("token", data.token)
-        setUser(data.user)
-        return true
+      const mockUser: User = {
+        id: "1",
+        username,
+        email,
+        preferences: {
+          favoriteGenres: [],
+          language: "en",
+          region: "US",
+        },
       }
-      return false
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", "mock-jwt-token")
+      }
+      setUser(mockUser)
+      return true
     } catch (error) {
       console.error("Registration failed:", error)
       return false
+    } finally {
+      setLoading(false)
     }
   }
 
   const logout = () => {
-    localStorage.removeItem("token")
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token")
+    }
     setUser(null)
   }
 
-  const value = {
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData })
+    }
+  }
+
+  const value: AuthContextType = {
     user,
     login,
     register,
     logout,
     loading,
+    updateUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
