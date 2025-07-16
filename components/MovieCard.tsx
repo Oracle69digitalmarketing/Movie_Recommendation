@@ -1,54 +1,163 @@
 "use client"
 
-import type React from "react"
-import type { Movie } from "../types"
-import Image from "next/image"
-import { HeartIcon, StarIcon } from "@heroicons/react/24/solid"
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Heart, Plus, Star, Eye } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+
+interface Movie {
+  id: number
+  title: string
+  poster_path?: string
+  release_date?: string
+  vote_average?: number
+  overview?: string
+  genre_ids?: number[]
+}
 
 interface MovieCardProps {
   movie: Movie
-  isFavorite?: boolean
-  onFavoriteToggle?: (movie: Movie) => void
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ movie, isFavorite = false, onFavoriteToggle }) => {
-  const handleFavoriteClick = () => {
-    if (onFavoriteToggle) {
-      onFavoriteToggle(movie)
+export default function MovieCard({ movie }: MovieCardProps) {
+  const { user } = useAuth()
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [isInWatchlist, setIsInWatchlist] = useState(false)
+  const [isWatched, setIsWatched] = useState(false)
+
+  const handleFavoriteToggle = async () => {
+    if (!user) return
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/favorites`, {
+        method: isFavorite ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ movieId: movie.id }),
+      })
+
+      if (response.ok) {
+        setIsFavorite(!isFavorite)
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error)
     }
   }
 
+  const handleWatchlistToggle = async () => {
+    if (!user) return
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/watchlist`, {
+        method: isInWatchlist ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ movieId: movie.id }),
+      })
+
+      if (response.ok) {
+        setIsInWatchlist(!isInWatchlist)
+      }
+    } catch (error) {
+      console.error("Error toggling watchlist:", error)
+    }
+  }
+
+  const handleWatchedToggle = async () => {
+    if (!user) return
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/watched`, {
+        method: isWatched ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ movieId: movie.id }),
+      })
+
+      if (response.ok) {
+        setIsWatched(!isWatched)
+      }
+    } catch (error) {
+      console.error("Error toggling watched:", error)
+    }
+  }
+
+  const posterUrl = movie.poster_path
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    : "/placeholder.svg?height=750&width=500"
+
+  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A"
+  const rating = movie.vote_average ? (movie.vote_average / 2).toFixed(1) : "N/A"
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="relative h-56">
-        <Image
-          src={`https://image.tmdb.org/t/p/w500/${movie.poster_path}`}
+    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-105">
+      <div className="relative aspect-[2/3] overflow-hidden">
+        <img
+          src={posterUrl || "/placeholder.svg"}
           alt={movie.title}
-          layout="fill"
-          objectFit="cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
         />
-      </div>
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">{movie.title}</h2>
-          {onFavoriteToggle && (
-            <button onClick={handleFavoriteClick}>
-              {isFavorite ? (
-                <HeartIcon className="h-6 w-6 text-red-500" />
-              ) : (
-                <HeartIcon className="h-6 w-6 text-gray-400" />
-              )}
-            </button>
-          )}
+
+        {/* Overlay with actions */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <div className="flex gap-2">
+            {user && (
+              <>
+                <Button
+                  size="sm"
+                  variant={isFavorite ? "default" : "secondary"}
+                  onClick={handleFavoriteToggle}
+                  className="h-8 w-8 p-0"
+                >
+                  <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant={isInWatchlist ? "default" : "secondary"}
+                  onClick={handleWatchlistToggle}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant={isWatched ? "default" : "secondary"}
+                  onClick={handleWatchedToggle}
+                  className="h-8 w-8 p-0"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex items-center mb-2">
-          <StarIcon className="h-5 w-5 text-yellow-400 mr-1" />
-          <span>{movie.vote_average}</span>
-        </div>
-        <p className="text-gray-700 text-sm">{movie.overview}</p>
+
+        {/* Rating badge */}
+        {movie.vote_average && movie.vote_average > 0 && (
+          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black">
+            <Star className="w-3 h-3 mr-1 fill-current" />
+            {rating}
+          </Badge>
+        )}
       </div>
-    </div>
+
+      <CardContent className="p-4">
+        <h3 className="font-semibold text-sm mb-1 line-clamp-2 min-h-[2.5rem]">{movie.title}</h3>
+
+        <p className="text-xs text-muted-foreground mb-2">{releaseYear}</p>
+
+        {movie.overview && <p className="text-xs text-muted-foreground line-clamp-3">{movie.overview}</p>}
+      </CardContent>
+    </Card>
   )
 }
-
-export default MovieCard

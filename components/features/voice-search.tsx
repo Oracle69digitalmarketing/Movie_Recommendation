@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Mic, MicOff, Volume2 } from "lucide-react"
-import SpeechRecognition from "speech-recognition"
 
 interface VoiceSearchProps {
   onSearch: (query: string) => void
@@ -13,13 +12,23 @@ interface VoiceSearchProps {
 export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const recognitionRef = useRef<any | null>(null)
+  const [isSupported, setIsSupported] = useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    // Check if speech recognition is supported
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    setIsSupported(!!SpeechRecognition)
+  }, [])
 
   const startListening = () => {
-    if (!SpeechRecognition) {
+    if (!isSupported) {
       alert("Speech recognition not supported in this browser")
       return
     }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
     const recognition = new SpeechRecognition()
 
@@ -31,7 +40,7 @@ export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
       setIsListening(true)
     }
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       const current = event.resultIndex
       const transcript = event.results[current][0].transcript
       setTranscript(transcript)
@@ -42,7 +51,7 @@ export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
       }
     }
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error)
       setIsListening(false)
     }
@@ -60,6 +69,18 @@ export default function VoiceSearch({ onSearch }: VoiceSearchProps) {
       recognitionRef.current.stop()
     }
     setIsListening(false)
+  }
+
+  if (!isSupported) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground text-center">
+            Voice search is not supported in this browser. Please try Chrome, Safari, or Edge.
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

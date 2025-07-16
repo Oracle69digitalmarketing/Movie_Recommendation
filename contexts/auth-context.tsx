@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { authAPI } from "../services/api"
 
 interface User {
   id: string
@@ -12,16 +10,15 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  token: string | null
-  login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
+  register: (username: string, email: string, password: string) => Promise<boolean>
   logout: () => void
   loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")
@@ -33,55 +30,96 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token"))
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const initAuth = async () => {
-      if (token) {
-        try {
-          const userData = await authAPI.getCurrentUser()
-          setUser(userData.user)
-        } catch (error) {
-          localStorage.removeItem("token")
-          setToken(null)
-        }
-      }
+    // Check for existing token on mount
+    const token = localStorage.getItem("token")
+    if (token) {
+      // Verify token and get user info
+      verifyToken(token)
+    } else {
       setLoading(false)
     }
+  }, [])
 
-    initAuth()
-  }, [token])
+  const verifyToken = async (token: string) => {
+    try {
+      const response = await fetch("/api/auth/verify", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
-  const login = async (email: string, password: string) => {
-    const response = await authAPI.login(email, password)
-    const { token: newToken, user: userData } = response
-
-    localStorage.setItem("token", newToken)
-    setToken(newToken)
-    setUser(userData)
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData.user)
+      } else {
+        localStorage.removeItem("token")
+      }
+    } catch (error) {
+      console.error("Token verification failed:", error)
+      localStorage.removeItem("token")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const register = async (username: string, email: string, password: string) => {
-    const response = await authAPI.register(username, email, password)
-    const { token: newToken, user: userData } = response
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    localStorage.setItem("token", newToken)
-    setToken(newToken)
-    setUser(userData)
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem("token", data.token)
+        setUser(data.user)
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Login failed:", error)
+      return false
+    }
+  }
+
+  const register = async (username: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, email, password }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem("token", data.token)
+        setUser(data.user)
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Registration failed:", error)
+      return false
+    }
   }
 
   const logout = () => {
     localStorage.removeItem("token")
-    setToken(null)
     setUser(null)
   }
 
   const value = {
     user,
-    token,
     login,
     register,
     logout,
