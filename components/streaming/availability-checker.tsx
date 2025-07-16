@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ExternalLink, Play } from "lucide-react"
-import { StreamingService, type StreamingProvider } from "@/lib/streaming-service"
+import type { StreamingProvider } from "@/lib/streaming-service"
+import { streamingAPI } from "@/services/api"
 
 interface AvailabilityCheckerProps {
   movieId: number
@@ -20,8 +21,8 @@ export default function AvailabilityChecker({ movieId, movieTitle }: Availabilit
     const checkAvailability = async () => {
       setLoading(true)
       try {
-        const availability = await StreamingService.getAvailability(movieId)
-        setProviders(availability)
+        const response = await streamingAPI.getStreamingAvailability(movieId)
+        setProviders(response.providers)
       } catch (error) {
         console.error("Failed to check availability:", error)
       } finally {

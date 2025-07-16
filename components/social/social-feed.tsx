@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Heart, MessageCircle, Share2, Star } from "lucide-react"
 import { SocialService, type SocialPost } from "@/lib/social-service"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function SocialFeed() {
   const { user } = useAuth()

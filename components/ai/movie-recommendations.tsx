@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, RefreshCw } from "lucide-react"
 import { AIService } from "@/lib/ai-service"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/contexts/auth-context"
 
 interface AIRecommendation {
   title: string
