@@ -1,26 +1,27 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import type React from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Search, SlidersHorizontal, X } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Search, Filter, X, Sparkles } from "lucide-react"
+import { toast } from "sonner"
 
-interface SearchFilters {
-  query: string
-  genres: string[]
-  yearRange: [number, number]
-  ratingRange: [number, number]
-  runtimeRange: [number, number]
-  sortBy: string
-  includeAdult: boolean
-  language: string
+interface SmartSearchProps {
+  onSearch: (query: string, filters: SearchFilters) => void
+  initialQuery?: string
+  initialFilters?: SearchFilters
+}
+
+export interface SearchFilters {
+  genre?: string
+  year?: [number, number]
+  rating?: [number, number]
+  runtime?: [number, number] // in minutes
 }
 
 const genres = [
@@ -45,287 +46,157 @@ const genres = [
   "Western",
 ]
 
-const sortOptions = [
-  { value: "popularity.desc", label: "Most Popular" },
-  { value: "vote_average.desc", label: "Highest Rated" },
-  { value: "release_date.desc", label: "Newest First" },
-  { value: "release_date.asc", label: "Oldest First" },
-  { value: "title.asc", label: "A-Z" },
-  { value: "title.desc", label: "Z-A" },
-]
+export function SmartSearch({ onSearch, initialQuery = "", initialFilters }: SmartSearchProps) {
+  const [query, setQuery] = useState(initialQuery)
+  const [filters, setFilters] = useState<SearchFilters>(
+    initialFilters || {
+      year: [1900, new Date().getFullYear()],
+      rating: [0, 10],
+      runtime: [0, 300],
+    },
+  )
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
-const languages = [
-  { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "it", label: "Italian" },
-  { value: "ja", label: "Japanese" },
-  { value: "ko", label: "Korean" },
-]
+  useEffect(() => {
+    setQuery(initialQuery)
+    setFilters(
+      initialFilters || {
+        year: [1900, new Date().getFullYear()],
+        rating: [0, 10],
+        runtime: [0, 300],
+      },
+    )
+  }, [initialQuery, initialFilters])
 
-interface SmartSearchProps {
-  onSearch: (filters: SearchFilters) => void
-  onAISearch?: (query: string) => void
-}
-
-export default function SmartSearch({ onSearch, onAISearch }: SmartSearchProps) {
-  const [filters, setFilters] = useState<SearchFilters>({
-    query: "",
-    genres: [],
-    yearRange: [1990, 2024],
-    ratingRange: [0, 10],
-    runtimeRange: [60, 180],
-    sortBy: "popularity.desc",
-    includeAdult: false,
-    language: "en",
-  })
-
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [aiQuery, setAiQuery] = useState("")
-
-  const handleGenreToggle = (genre: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      genres: prev.genres.includes(genre) ? prev.genres.filter((g) => g !== genre) : [...prev.genres, genre],
-    }))
-  }
-
-  const handleSearch = () => {
-    onSearch(filters)
-  }
-
-  const handleAISearch = () => {
-    if (onAISearch && aiQuery.trim()) {
-      onAISearch(aiQuery)
+  const handleSearch = useCallback(() => {
+    if (!query.trim()) {
+      toast.warning("Search Input Empty", {
+        description: "Please enter a search query before searching.",
+      })
+      return
     }
-  }
+    onSearch(query, filters)
+    setIsPopoverOpen(false) // Close popover after search
+  }, [query, filters, onSearch])
 
-  const clearFilters = () => {
+  const handleClear = useCallback(() => {
+    setQuery("")
     setFilters({
-      query: "",
-      genres: [],
-      yearRange: [1990, 2024],
-      ratingRange: [0, 10],
-      runtimeRange: [60, 180],
-      sortBy: "popularity.desc",
-      includeAdult: false,
-      language: "en",
+      year: [1900, new Date().getFullYear()],
+      rating: [0, 10],
+      runtime: [0, 300],
     })
-  }
+    onSearch("", {
+      // Trigger search with empty query and default filters
+      year: [1900, new Date().getFullYear()],
+      rating: [0, 10],
+      runtime: [0, 300],
+    })
+    setIsPopoverOpen(false)
+  }, [onSearch])
 
-  const activeFiltersCount =
-    (filters.query ? 1 : 0) +
-    filters.genres.length +
-    (filters.yearRange[0] !== 1990 || filters.yearRange[1] !== 2024 ? 1 : 0) +
-    (filters.ratingRange[0] !== 0 || filters.ratingRange[1] !== 10 ? 1 : 0) +
-    (filters.runtimeRange[0] !== 60 || filters.runtimeRange[1] !== 180 ? 1 : 0) +
-    (filters.sortBy !== "popularity.desc" ? 1 : 0) +
-    (filters.includeAdult ? 1 : 0) +
-    (filters.language !== "en" ? 1 : 0)
+  const handleFilterChange = useCallback((key: keyof SearchFilters, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        handleSearch()
+      }
+    },
+    [handleSearch],
+  )
 
   return (
-    <div className="space-y-6">
-      {/* AI-Powered Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            AI-Powered Search
-          </CardTitle>
-          <CardDescription>Describe what you're looking for in natural language</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g., 'Show me recent sci-fi movies with good ratings' or 'Find comedies from the 90s'"
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAISearch()}
+    <div className="flex w-full max-w-2xl items-center space-x-2">
+      <Input
+        type="text"
+        placeholder="Search movies, genres, actors..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleKeyDown}
+        className="flex-grow"
+        aria-label="Movie search input"
+      />
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="Open filter options">
+            <SlidersHorizontal className="h-5 w-5" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-4 space-y-4">
+          <h4 className="font-medium text-lg">Filters</h4>
+          <div className="space-y-2">
+            <Label htmlFor="genre-select">Genre</Label>
+            <Select value={filters.genre || ""} onValueChange={(value) => handleFilterChange("genre", value)}>
+              <SelectTrigger id="genre-select">
+                <SelectValue placeholder="Select a genre" />
+              </SelectTrigger>
+              <SelectContent>
+                {genres.map((genre) => (
+                  <SelectItem key={genre} value={genre}>
+                    {genre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>
+              Release Year: {filters.year?.[0]} - {filters.year?.[1]}
+            </Label>
+            <Slider
+              min={1900}
+              max={new Date().getFullYear()}
+              step={1}
+              value={filters.year}
+              onValueChange={(value) => handleFilterChange("year", value)}
+              range
+              aria-label="Release year range slider"
             />
-            <Button onClick={handleAISearch} disabled={!aiQuery.trim()}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Search
+          </div>
+          <div className="space-y-2">
+            <Label>
+              Rating: {filters.rating?.[0]} - {filters.rating?.[1]}
+            </Label>
+            <Slider
+              min={0}
+              max={10}
+              step={0.1}
+              value={filters.rating}
+              onValueChange={(value) => handleFilterChange("rating", value)}
+              range
+              aria-label="Rating range slider"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>
+              Runtime (min): {filters.runtime?.[0]} - {filters.runtime?.[1]}
+            </Label>
+            <Slider
+              min={0}
+              max={300}
+              step={5}
+              value={filters.runtime}
+              onValueChange={(value) => handleFilterChange("runtime", value)}
+              range
+              aria-label="Runtime range slider"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleClear}>
+              <X className="h-4 w-4 mr-2" /> Clear Filters
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Traditional Search */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Advanced Search
-              </CardTitle>
-              <CardDescription>Use detailed filters to find exactly what you want</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              {activeFiltersCount > 0 && (
-                <Badge variant="secondary">
-                  {activeFiltersCount} filter{activeFiltersCount !== 1 ? "s" : ""} active
-                </Badge>
-              )}
-              <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)}>
-                <Filter className="h-4 w-4 mr-2" />
-                {showAdvanced ? "Hide" : "Show"} Filters
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Basic Search */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search movies by title, actor, director..."
-              value={filters.query}
-              onChange={(e) => setFilters((prev) => ({ ...prev, query: e.target.value }))}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            />
             <Button onClick={handleSearch}>
-              <Search className="h-4 w-4 mr-2" />
-              Search
+              <Search className="h-4 w-4 mr-2" /> Apply Search
             </Button>
           </div>
-
-          {/* Advanced Filters */}
-          {showAdvanced && (
-            <div className="space-y-6 pt-4 border-t">
-              {/* Genres */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Genres</Label>
-                <div className="flex flex-wrap gap-2">
-                  {genres.map((genre) => (
-                    <Badge
-                      key={genre}
-                      variant={filters.genres.includes(genre) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => handleGenreToggle(genre)}
-                    >
-                      {genre}
-                      {filters.genres.includes(genre) && <X className="h-3 w-3 ml-1" />}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Year Range */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  Release Year: {filters.yearRange[0]} - {filters.yearRange[1]}
-                </Label>
-                <Slider
-                  value={filters.yearRange}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, yearRange: value as [number, number] }))}
-                  min={1900}
-                  max={2024}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Rating Range */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  Rating: {filters.ratingRange[0]} - {filters.ratingRange[1]}
-                </Label>
-                <Slider
-                  value={filters.ratingRange}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, ratingRange: value as [number, number] }))}
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Runtime Range */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  Runtime: {filters.runtimeRange[0]} - {filters.runtimeRange[1]} minutes
-                </Label>
-                <Slider
-                  value={filters.runtimeRange}
-                  onValueChange={(value) =>
-                    setFilters((prev) => ({ ...prev, runtimeRange: value as [number, number] }))
-                  }
-                  min={30}
-                  max={300}
-                  step={5}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Sort and Language */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Sort By</Label>
-                  <Select
-                    value={filters.sortBy}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Language</Label>
-                  <Select
-                    value={filters.language}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, language: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {languages.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Include Adult Content */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="includeAdult"
-                  checked={filters.includeAdult}
-                  onCheckedChange={(checked) => setFilters((prev) => ({ ...prev, includeAdult: checked as boolean }))}
-                />
-                <Label htmlFor="includeAdult" className="text-sm">
-                  Include adult content
-                </Label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-4">
-                <Button onClick={handleSearch} className="flex-1">
-                  Apply Filters
-                </Button>
-                <Button variant="outline" onClick={clearFilters}>
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </PopoverContent>
+      </Popover>
+      <Button onClick={handleSearch} aria-label="Perform search">
+        <Search className="h-5 w-5" />
+      </Button>
     </div>
   )
 }

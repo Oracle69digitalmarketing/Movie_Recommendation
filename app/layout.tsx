@@ -1,12 +1,17 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { AuthProvider } from "@/contexts/auth-context"
+import { Inter } from "next/font/google"
 import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/contexts/auth-context"
+import { Toaster } from "@/components/ui/sonner"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Enhanced Movie App",
-  description: "AI-powered movie recommendation app with advanced features",
-  generator: "v0.dev",
+  title: "Movie Recommendation App",
+  description: "AI-powered movie recommendations and social features",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -15,9 +20,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
