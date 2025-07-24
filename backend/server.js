@@ -22,9 +22,13 @@ app.use(cors())
 app.use(express.json())
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/movieapp", {
+
+console.log('Attempting MongoDB connection with URI:', process.env.MONGO_URI);
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/movieapp", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    connectTimeoutMS: 30000, // Give up trying to connect after 30 seconds
+    socketTimeoutMS: 45000,  // Close sockets after 45 seconds of inactivity
   })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB connection error:", err))
