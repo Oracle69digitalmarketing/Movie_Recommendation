@@ -24,7 +24,7 @@ app.use(express.json())
 // MongoDB connection
 
 console.log('Attempting MongoDB connection with URI:', process.env.MONGO_URI);
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/movieapp", {
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/movieapp", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     connectTimeoutMS: 30000, // Give up trying to connect after 30 seconds
