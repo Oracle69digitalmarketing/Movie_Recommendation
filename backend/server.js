@@ -36,6 +36,7 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/movieapp", 
 // Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/movies", movieRoutes)
+app.use("/api/tvshows", require("./routes/tvshows"))
 app.use("/api/users", userRoutes)
 app.use("/api/ai", aiRoutes)
 app.use("/api/streaming", streamingRoutes)
