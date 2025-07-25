@@ -13,7 +13,9 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 module.exports = {
   searchMovies: (query, page) => fetchFromTMDB("/search/movie", { query, page }),
   getPopularMovies: (page) => fetchFromTMDB("/movie/popular", { page }),
-  getMovieDetails: (id) => fetchFromTMDB(`/movie/${id}`, { append_to_response: "credits,videos" }),
-  getMoviesByGenre: (genreId, page) => fetchFromTMDB("/discover/movie", { with_genres: genreId, page }),
+  getMovieDetails: (id) =>
+    fetchFromTMDB(`/movie/${id}`, { append_to_response: "credits,videos" }),
+  getMoviesByGenre: (genreId, page) =>
+    fetchFromTMDB("/discover/movie", { with_genres: genreId, page }),
   getGenres: () => fetchFromTMDB("/genre/movie/list"),
 };
