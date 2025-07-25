@@ -1,71 +1,123 @@
-# 🎬 Enhanced Movie App  
-**An Intelligent & Scalable Entertainment Platform**
+# 🎬 Movie Recommendation Platform
+
+AI-powered movie and TV show discovery engine with personalized recommendations, streaming availability, and real-time data from TMDB and other APIs.
 
 
-## 🌟 Vision & Overview
 
-The **Enhanced Movie App** redefines the digital movie experience through cutting-edge AI, seamless streaming integration, and community engagement tools. Built as a robust full-stack system, it delivers hyper-personalized recommendations, real-time data, and interactive features to modern viewers — setting a new benchmark for intelligent entertainment platforms.
+## 🚀 Overview
 
-
-## 🚀 Core Features & Innovation
-
-The platform delivers far more than basic browsing:
-
-- 🎯 **AI-Powered Recommendations**  
-  Personalized suggestions based on user behavior, viewing history, and trending content.
-
-- 🔍 **Smart Search & Filtering**  
-  Advanced filters and search for quick and accurate discovery.
-
-- 📡 **Real-Time Streaming Availability**  
-  Shows current availability across popular streaming platforms.
-
-- 👥 **Social Engagement Hub**  
-  Profiles, watchlists, ratings, reviews, and interactive community features.
-
-- 📊 **Analytics Dashboard**  
-  Backend insights into user behavior, content performance, and growth metrics.
-
-- 🎙 **Voice Search Support** *(planned)*  
-  Hands-free navigation with natural language queries.
-
-- 🏗 **Scalable Architecture**  
-  Engineered for growth — built to scale across regions and millions of users.
+This project is a full-stack entertainment platform designed for scalability, personalization, and seamless discovery. It integrates external APIs (TMDB, streaming providers), modular backend services, and an interactive frontend.
 
 
-## 🧱 Tech Stack Overview
 
-### ⚛ Frontend
-- **Next.js 15+** – Hybrid SSR/SSG React framework  
-- **React** – Core UI library  
-- **Tailwind CSS** – Rapid styling with utility-first classes
+## 🎯 Core Features
 
-### 🔧 Backend
-- **Node.js** – Asynchronous, event-driven runtime  
-- **Express.js** – Lightweight web framework  
-- **MongoDB Atlas** – Scalable, cloud-based NoSQL DB  
-- **Mongoose** – MongoDB ODM for schema modeling  
-- **JWT** – Authentication via secure tokens  
-- **CORS** – API cross-origin middleware  
-- **Dotenv** – Secure environment variable management
+- 🔍 **Search & Discover**: Real-time movie & TV show search via TMDB
+- 🧠 **Smart Recommendations**: Personalized by genre, rating, user watchlist
+- 📍 **Streaming Availability**: Know where to watch movies instantly
+- 🧾 **User System**: Signup, login, profile, and watchlist tracking
+- 💾 **Backend API**: Modular Node.js/Express API with clean service layers
+- 🌐 **Frontend Interface**: React (or other) for responsive experience
+- 🔐 **Security**: JWT authentication, environment variables for config
 
 
-## 🧩 Project Architecture
 
-Movie_Recommendation/ ├── backend/ │   ├── config/         # DB connection, environment setup │   ├── models/         # Mongoose schemas │   ├── routes/         # API routes (auth, movies, AI, etc.) │   ├── middleware/     # Custom auth, error handlers │   ├── services/       # Business logic, API integration │   ├── server.js       # App entry point │   └── package.json    # Backend dependencies └── frontend/ ├── public/         # Static assets ├── components/     # UI components ├── pages/          # Next.js routing ├── styles/         # Tailwind + global styles ├── lib/            # Frontend utilities └── package.json    # Frontend dependencies
+## 🧱 Tech Stack
+
+| Layer     | Tech Used                                      |
+|-----------|------------------------------------------------|
+| Frontend  | React • Axios • TailwindCSS (optional)         |
+| Backend   | Node.js • Express • TMDB API • JustWatch API   |
+| Auth      | JWT • bcrypt • Middleware                      |
+| Tools     | GitHub • dotenv • Prettier • Postman           |
+| Hosting   | Vercel/Netlify (Frontend), Render/Heroku (Backend) |
 
 
-## 🛠 Setup & Local Development
 
-### ✅ Prerequisites
-- Node.js (LTS): [Install](https://nodejs.org/)
-- npm (comes with Node.js)
-- Git
+## 📁 Folder Structure
+
+Movie_Recommendation/ ├── backend/ │   ├── controllers/ │   ├── routes/ │   ├── services/ │   ├── utils/ │   └── app.js ├── frontend/ │   ├── components/ │   ├── pages/ │   └── App.js └── README.md
 
 
-### 🔧 Installation
 
-1. **Clone the Repository**
+## 🔌 API Endpoints
+
+| Route                      | Method | Description                            |
+|----------------------------|--------|----------------------------------------|
+| `/api/movies`              | GET    | Fetch popular/trending movies          |
+| `/api/movies/:id`          | GET    | Fetch movie details + streaming links  |
+| `/api/tvshows`             | GET    | Fetch TV shows                         |
+| `/api/users/register`      | POST   | Register user                          |
+| `/api/users/login`         | POST   | User authentication                    |
+| `/api/users/profile`       | GET    | Fetch user data                        |
+| `/api/users/watchlist`     | GET/POST/DELETE | Watchlist operations         |
+
+
+
+## 🎥 TMDB Integration
+
+This platform uses [TMDB (The Movie Database)](https://www.themoviedb.org/documentation/api) as the primary source for movie and TV metadata.
+
+### 🔄 What We Fetch:
+- Movie & TV titles
+- Genres
+- Posters and backdrops
+- Cast and crew
+- Ratings
+- Trailers and media
+- Synopses
+- Release dates
+
+### 📦 Backend Integration:
+- TMDB API is called inside:
+  - `services/movieService.js`
+  - `routes/movies.js`
+- Calls are made on-demand when:
+  - User searches or selects a movie
+  - Frontend loads a details page
+
+### 🔐 Configuration:
+- Requires a TMDB API key stored in `.env`:
+
+TMDB_API_KEY=your_tmdb_key
+
+
+
+## 📡 Streaming Availability
+
+To show where users can watch movies, we integrate with external streaming availability APIs.
+
+### 🌍 API Used:
+- **[Watchmode API](https://www.watchmode.com/)** or **JustWatch API** (select one as used)
+
+### 🔄 How We Use It:
+- Backend service `streamingService.js` fetches real-time availability (country-specific)
+- Combined into the `/api/movies/:id` endpoint response
+- Frontend displays:
+  - Platform icons (Netflix, Prime, Disney+)
+  - Watch links or pricing (if available)
+
+### ⚙️ Configuration:
+- `.env` key setup:
+
+STREAMING_API_KEY=your_watchmode_or_justwatch_key
+
+
+
+## 🧪 Frontend Real-time Behavior
+
+- ✅ Movie details page triggers a fetch to `/api/movies/:id`
+- ✅ Streaming platforms are dynamically fetched and displayed per request
+- ❌ No static or hardcoded availability — always real-time
+
+Ensure this flow is maintained in `MovieDetails.jsx` (or equivalent component).
+
+
+
+## 🛠️ Local Development Setup
+
+1. **Clone the repo**
+
 ```bash
 git clone https://github.com/Oracle69digitalmarketing/Movie_Recommendation.git
 cd Movie_Recommendation
@@ -75,75 +127,62 @@ cd Movie_Recommendation
 
 
 cd backend
-
-# Create .env file
+npm install
 touch .env
 
-Add your MongoDB URI and JWT secret:
+Add to .env:
 
-MONGO_URI=mongodb+srv://<your-user>:<your-pass>@oracle69.mongodb.net/...
-JWT_SECRET=YOUR_RANDOM_SECRET
 PORT=5000
+TMDB_API_KEY=your_tmdb_key
+STREAMING_API_KEY=your_watchmode_key
+JWT_SECRET=your_secret_key
 
-Install dependencies & run:
+Start server:
 
-npm install
-npm run dev
-
-Backend runs at: http://localhost:5000
+npm start
 
 3. Frontend Setup
 
 
 
-cd ../frontend
+cd frontend
 npm install
-npm run dev
-
-Frontend runs at: http://localhost:3000
-or local network IP (e.g., http://10.221.8.139:3000)
+npm start
 
 
 
-💼 Monetization & Growth Strategy
+🔮 Future Roadmap
 
-💳 Subscription Tiers
-Premium access, ad-free mode, or early releases
+AI-based recommendation engine (user behavior + ratings)
 
-🎟 Transactional Revenue
-Pay-per-view for premieres, events, or rare content
+Genre clustering + collaborative filtering
 
-🤝 Partnership Channels
-Streaming services, production studios, affiliate networks
+User-generated ratings, likes, and comments
 
-📈 Data Monetization
-Aggregated insights on user trends (with consent)
+Push notifications for trending movies
 
-⚙️ Feature Expansion
-Modular backend allows easy integration of AI, APIs, and new social tools
-
-☁ Elastic Scalability
-MongoDB Atlas + decoupled front/back design ensures cloud-native scaling
-
+Native mobile app (React Native)
 
 
 
 🤝 Contributing
 
-We welcome contributions!
-Please follow the guidelines in CONTRIBUTING.md (if available).
+git checkout -b feature/my-feature
+git commit -m "Added my feature"
+git push origin feature/my-feature
+
+Pull requests welcome.
 
 
 
-⚖ License
+📜 License
 
-This project is licensed under the MIT License.
+MIT © Oracle69 Digital Marketing
 
 
 
-📬 Contact
+🎖️ Maintainers
 
-Prince Adewumi Adewale
-Founder, Oracle69 Digital Marketing
-📧 adewaleadewumi@oracle69.com
-🔗 Linkedin: https://linkedin.com/in/oracle69digitalmarketing | Website: https://oracle69.com 
+Prince Adewumi Adewale — Product Owner, Backend Architect
+
+Contributors welcome
