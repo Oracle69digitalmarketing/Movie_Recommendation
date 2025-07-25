@@ -3,78 +3,76 @@ const axios = require("axios")
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 
-// Get popular TV shows
+// 🔥 Get trending/popular TV shows
 exports.getPopularTVShows = async (req, res) => {
+  const { page = 1 } = req.query
   try {
-    const { page = 1 } = req.query
-    const response = await axios.get(`${TMDB_BASE_URL}/tv/popular`, {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/tv/popular`, {
       params: { api_key: TMDB_API_KEY, page },
     })
-    res.json(response.data)
+    res.json(data)
   } catch (error) {
     res.status(500).json({ message: "Error fetching popular TV shows", error: error.message })
   }
 }
 
-// Get TV show details
+// 🎯 Get detailed info for a single TV show
 exports.getTVShowDetails = async (req, res) => {
+  const { id } = req.params
   try {
-    const { id } = req.params
-    const response = await axios.get(`${TMDB_BASE_URL}/tv/${id}`, {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/tv/${id}`, {
       params: {
         api_key: TMDB_API_KEY,
-        append_to_response: "credits,videos,recommendations",
+        append_to_response: "credits,videos,recommendations", // can add 'images,similar'
       },
     })
-    res.json(response.data)
+    res.json(data)
   } catch (error) {
     res.status(500).json({ message: "Error fetching TV show details", error: error.message })
   }
 }
 
-// Search TV shows
+// 🔍 Search TV shows by name
 exports.searchTVShows = async (req, res) => {
-  try {
-    const { query, page = 1 } = req.query
-    if (!query) return res.status(400).json({ message: "Search query is required" })
+  const { query, page = 1 } = req.query
+  if (!query) return res.status(400).json({ message: "Search query is required" })
 
-    const response = await axios.get(`${TMDB_BASE_URL}/search/tv`, {
+  try {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/search/tv`, {
       params: { api_key: TMDB_API_KEY, query, page },
     })
-
-    res.json(response.data)
+    res.json(data)
   } catch (error) {
     res.status(500).json({ message: "Error searching TV shows", error: error.message })
   }
 }
 
-// Get TV genres
+// 🎭 Get list of TV genres
 exports.getTVGenres = async (req, res) => {
   try {
-    const response = await axios.get(`${TMDB_BASE_URL}/genre/tv/list`, {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/genre/tv/list`, {
       params: { api_key: TMDB_API_KEY },
     })
-    res.json(response.data)
+    res.json(data)
   } catch (error) {
     res.status(500).json({ message: "Error fetching TV genres", error: error.message })
   }
 }
 
-// Get TV shows by genre
+// 🎞️ Get TV shows by genre ID
 exports.getShowsByGenre = async (req, res) => {
-  try {
-    const { genreId } = req.params
-    const { page = 1 } = req.query
+  const { genreId } = req.params
+  const { page = 1 } = req.query
 
-    const response = await axios.get(`${TMDB_BASE_URL}/discover/tv`, {
+  try {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/discover/tv`, {
       params: {
         api_key: TMDB_API_KEY,
         with_genres: genreId,
         page,
       },
     })
-
-    res.json(response.data)
+    res.json(data)
   } catch (error) {
     res.status(500).json({ message: "Error fetching TV shows by genre", error: error.message })
   }
